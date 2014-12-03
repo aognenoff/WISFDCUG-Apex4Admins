@@ -48,8 +48,5 @@ trigger OpportunityBeforeInsertTrigger on Opportunity (before insert) {
     	opp.OwnerId = accountMap.get(opp.AccountId).OwnerId; //lookup the Account in the Map using the Opportunity Account Id
         
     }
-    
-
-    
-    
+ 
 }

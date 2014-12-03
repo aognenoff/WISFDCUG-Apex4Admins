@@ -1,0 +1,55 @@
+trigger OpportunityBeforeInsertTrigger on Opportunity (before insert) {
+	
+    /*
+ 		The purpose of this trigger is to automatically set the Owner of 
+		any new Opportunities to be the Owner of the Account the Opportunity is
+		associated to. 
+			*It should only be set when the Opportunity is initially created. (before insert)
+
+			*Like all triggers, this logic should not assume it is running for 
+			a single opportunity and should be capable of working on large batches
+			of records
+    */
+    
+    //Step 1: Gather up all unique Account Ids that are referenced in the batch of Opportunities
+    Set<Id> accountIds = new Set<Id>(); //this is the Set we will store the Ids in (Hint: Sets store unique values automatically)
+    
+    //loop through each opportunity in the batch and put the related Account Id into our Set
+    for(Opportunity opp : Trigger.new)
+    {
+        accountIds.add(opp.AccountId); //adding into a Set automatically handles the unique check for us   
+    }
+    
+    //Step 2: Since this batch of records is of opportunities and we need the related Account Owner Ids, we need to query for them
+    List<Account> accountList = new List<Account>(); //List of Account sObjects where we will store the results of our query
+    
+    //we need to populate our List with Accounts but ONLY the information we really need to get the job done, 
+    //in this case the Account Id and the Account's Owner Id
+    accountList = [SELECT Id, OwnerId FROM Account WHERE Id IN :accountIds LIMIT 200];
+    
+    //since we need to be able to get the Account Owner Id quickly later on, we're going to convert our List into a Map
+    //with the Account Id as the key we can use for looking up the object later
+    Map<Id,Account> accountMap = new Map<Id,Account>();
+    
+    for(Account a : accountList)
+    {
+        accountMap.put(a.Id,a); //for each Account in the List, populate the Map keyed by the Account Id
+    }
+
+    /*
+        Step 3: Now that we have all of our Accounts cached in a Map that we can use for easy retrieval, we'll loop through 
+        all of the opportunities in our batch again but this time we're going to lookup the opportunity Account's Owner and
+        set it to be the new owner of the Opportunity
+    */
+    for(Opportunity opp : Trigger.new)
+    {        
+        //TODO: What happens if the Opportunity is created without an Account? (Hint: there won't be an Account Owner to set)
+    
+    	opp.OwnerId = accountMap.get(opp.AccountId).OwnerId; //lookup the Account in the Map using the Opportunity Account Id
+        
+    }
+    
+
+    
+    
+}

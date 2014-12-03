@@ -1,0 +1,52 @@
+trigger OpportunityBeforeInsertTrigger on Opportunity (before insert) {
+	
+    /*
+ 		The purpose of this trigger is to automatically set the Owner of 
+		any new Opportunities to be the Owner of the Account the Opportunity is
+		associated to. 
+			*It should only be set when the Opportunity is initially created. (before insert)
+
+			*There should be a way to bypass this logic on a per opportunity 
+				basis so admins can override this behavior (ie: so historical 
+				opportunity data can be loaded)
+
+			*Like all triggers, this logic should not assume it is running for 
+			a single opportunity and should be capable of working on large batches
+			of records
+    */
+    
+    //Step 1: Gather up all unique Account Ids that are referenced in the batch of Opportunities
+    Set<Id> accountIds = new Set<Id>(); //this is the Set we will store the Ids in (Hint: Sets store unique values automatically)
+    
+    //loop through each opportunity in the batch and put the related Account Id into our Set
+    for(Opportunity opp : Trigger.new)
+    {
+        accountIds.add(opp.AccountId); //adding into a Set automatically handles the unique check for us   
+    }
+    
+    /*
+        Step 2: Since this batch of records is of opportunities and we need the related Account Owner Ids, we need to query for them
+        and since we need to be able to get the Account Owner Id quickly later on, we're going to use a Map
+        with the Account Id as the key we can use for looking up the object later
+    */
+
+    //Alternative method that uses fewer script statements
+    Map<Id,Account> accountMap = new Map<Id,Account>([SELECT Id, OwnerId FROM Account WHERE Id IN :accountIds LIMIT 200]);
+    
+    /*
+        Step 3: Now that we have all of our Accounts cached in a Map that we can use for easy retrieval, we'll loop through 
+        all of the opportunities in our batch again but this time we're going to lookup the opportunity Account's Owner and
+        set it to be the new owner of the Opportunity
+    */
+    for(Opportunity opp : Trigger.new)
+    {        
+        
+        //TODO: How could we create a bypass mechanism so an admin can optionally have this logic kick in or not?  
+        
+        //check if the opportunity has an account before trying to get it's owner
+        if(accountMap.get(opp.AccountId) != null){
+    		opp.OwnerId = accountMap.get(opp.AccountId).OwnerId; //lookup the Account in the Map using the Opportunity Account Id
+        }
+    }  
+    
+}

@@ -1,0 +1,37 @@
+trigger OpportunityBeforeDeleteTrigger on Opportunity (before delete) {
+	/*
+		The purpose of this trigger is to prevent users from deleting opportunities
+		that have been marked closed (either won or lost) as this would have an impact
+		on reported financials.
+
+			*Users should be able to delete opportunities up until the point they are closed
+				(Hint: This means we can't just remove delete CRUD permissions from their profiles)
+
+			*Like all triggers, this logic should not assume it is running for a single opportunity 
+				and should be capable of working on large batches of records
+			
+			*There still needs to be a way to delete closed opportunity records by some sort of administrative
+				user in case there is a mistake that needs to be fixed by deleting records.
+				(Hint: There are lots of ways to accomplish this...)
+	*/
+    
+    //Get the name of the Profile of the currently logged in user
+    //We'll use this to check if the user is a System Administrator and allow the delete to finish
+    String UserProfileName = [SELECT Name FROM Profile WHERE Id =: UserInfo.getProfileId()].Name;
+      
+    //loop through each opportunity in the batch being deleted
+    //Notice we're looping through Trigger.old and not Trigger.new as there is no Trigger.new when deleting records
+    for(Opportunity opp : Trigger.old){
+        
+        //check if the current opportunity is in a closed stage
+        //Hint: If we just wanted to prevent deleting Closed Won opportunities we could change this to check opp.IsWon
+        if(opp.IsClosed && UserProfileName != 'System Administrator' ){
+            
+            //we add a custom error message to this record which prevents the delete         
+            opp.addError('You cannot delete a closed opportunity.  Contact your system administrator for help.');
+            
+            //TODO: Homework - instead of hard coding an error message here, look at using Custom Labels to allow for changing the message 
+            //without touching the code later.  This would also make it translatable!
+        }
+    }
+}

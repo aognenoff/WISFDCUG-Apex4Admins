@@ -1,0 +1,34 @@
+public class CustomUserPermissions {
+
+    private List<CustomPermission> UserCustomPerms; //names of all the custom permissions a user has
+    
+    public CustomUserPermissions(Id userId){
+        //given a user, get all the SetupEntityAccess rows a user has where the type is a Custom Permission
+        List<SetupEntityAccess> UserAccess = new List<SetupEntityAccess>([SELECT SetupEntityId FROM SetupEntityAccess WHERE SetupEntityType='CustomPermission' AND ParentId IN (SELECT PermissionSetId FROM PermissionSetAssignment WHERE AssigneeId=:userId)]);
+        
+        if(UserAccess != null && !UserAccess.isEmpty()){
+            //get a unique set of Custom Permission Ids
+            Set<Id> UserCustomPermIds = new Set<Id>();
+            
+            for (SetupEntityAccess sea : UserAccess) {
+                UserCustomPermIds.add(sea.SetupEntityId);
+            }
+            
+            //get the friendly names of the Custom Permissions the user has
+            UserCustomPerms = [SELECT Id, DeveloperName, MasterLabel FROM CustomPermission WHERE Id IN :UserCustomPermIds];           
+        }
+
+    }
+    
+    public boolean hasPermission(String devName) {
+        //given the Developer Name of a custom permission, check if the user has it assigned
+        if(UserCustomPerms != null && !UserCustomPerms.isEmpty()){
+            for (CustomPermission perm : UserCustomPerms) {
+            	if (perm.DeveloperName.equals(devName)){
+                	return true;
+                } 
+        	}    	
+        }
+        return false;
+    }
+}

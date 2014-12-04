@@ -19,8 +19,7 @@ trigger OpportunityBeforeInsertTrigger on Opportunity (before insert) {
     Set<Id> accountIds = new Set<Id>(); //this is the Set we will store the Ids in (Hint: Sets store unique values automatically)
     
     //loop through each opportunity in the batch and put the related Account Id into our Set
-    for(Opportunity opp : Trigger.new)
-    {
+    for(Opportunity opp : Trigger.new){
         accountIds.add(opp.AccountId); //adding into a Set automatically handles the unique check for us   
     }
     

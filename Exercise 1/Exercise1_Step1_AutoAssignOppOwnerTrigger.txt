@@ -31,8 +31,7 @@ trigger OpportunityBeforeInsertTrigger on Opportunity (before insert) {
     //with the Account Id as the key we can use for looking up the object later
     Map<Id,Account> accountMap = new Map<Id,Account>();
     
-    for(Account a : accountList)
-    {
+    for(Account a : accountList){
         accountMap.put(a.Id,a); //for each Account in the List, populate the Map keyed by the Account Id
     }
 
